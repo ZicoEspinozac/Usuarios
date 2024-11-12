@@ -3,9 +3,46 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 const obtenerUsuarios = async (req, res) => {
+  const { search = '', page = 1, pageSize = 10 } = req.query;
+  const skip = (page - 1) * pageSize;
+  const take = parseInt(pageSize);
+
   try {
-    const usuarios = await prisma.usuario.findMany();
-    res.json(usuarios);
+    const where = search
+      ? {
+          OR: [
+            {
+              nombre: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+            {
+              apell_paterno: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+            {
+              apell_materno: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [usuarios, total] = await prisma.$transaction([
+      prisma.usuario.findMany({
+        where,
+        skip,
+        take,
+      }),
+      prisma.usuario.count({ where }),
+    ]);
+
+    res.json({ usuarios, total });
   } catch (err) {
     res.status(500).send('Error al obtener los usuarios');
   }
@@ -53,7 +90,6 @@ const editarUsuario = async (req, res) => {
     });
     res.json(usuarioActualizado);
   } catch (err) {
-    console.log('Error al actualizar el usuario:', err);
     res.status(500).send('Error al actualizar el usuario');
   }
 };
