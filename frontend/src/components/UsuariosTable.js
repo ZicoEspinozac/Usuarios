@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Table, Button, Input, Space, Modal, Form, notification, Select } from 'antd';
 import { SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -15,15 +15,9 @@ const UsuariosTable = () => {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [roles, setRoles] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [searchedColumn, setSearchedColumn] = useState('');
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
-  useEffect(() => {
-    fetchUsuarios();
-    fetchRoles();
-  }, [searchText, pagination]);
-
-  const fetchUsuarios = async () => {
+  const fetchUsuarios = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/usuarios`, {
@@ -31,18 +25,18 @@ const UsuariosTable = () => {
         params: { search: searchText, page: pagination.current, pageSize: pagination.pageSize },
       });
       setUsuarios(response.data.usuarios);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         total: response.data.total,
-      });
+      }));
     } catch (error) {
       notification.error({ message: 'Error al cargar usuarios', description: error.message });
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchText, pagination.current, pagination.pageSize]);
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/usuarios/roles`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -51,7 +45,15 @@ const UsuariosTable = () => {
     } catch (error) {
       notification.error({ message: 'Error al cargar roles', description: error.message });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUsuarios();
+  }, [fetchUsuarios]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const handleEdit = (record) => {
     setEditingUser(record);
@@ -103,12 +105,12 @@ const UsuariosTable = () => {
 
   const handleSearch = (value) => {
     setSearchText(value);
-    setPagination({ ...pagination, current: 1 }); // Reiniciar la paginación al buscar
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reiniciar la paginación al buscar
   };
 
   const handleReset = () => {
     setSearchText('');
-    setPagination({ ...pagination, current: 1 }); // Reiniciar la paginación al resetear
+    setPagination((prev) => ({ ...prev, current: 1 })); // Reiniciar la paginación al resetear
     fetchUsuarios(); // Refresca la lista de usuarios después de resetear
   };
 
@@ -121,7 +123,7 @@ const UsuariosTable = () => {
           onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => {
             setSearchText(selectedKeys[0]);
-            setPagination({ ...pagination, current: 1 });
+            setPagination((prev) => ({ ...prev, current: 1 }));
             confirm();
           }}
           style={{ marginBottom: 8, display: 'block' }}
@@ -131,7 +133,7 @@ const UsuariosTable = () => {
             type="primary"
             onClick={() => {
               setSearchText(selectedKeys[0]);
-              setPagination({ ...pagination, current: 1 });
+              setPagination((prev) => ({ ...prev, current: 1 }));
               confirm();
             }}
             icon={<SearchOutlined />}
@@ -152,7 +154,7 @@ const UsuariosTable = () => {
         ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
         : '',
     render: (text) =>
-      searchedColumn === dataIndex ? (
+      searchText ? (
         <Highlighter
           highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
           searchWords={[searchText]}
@@ -165,12 +167,13 @@ const UsuariosTable = () => {
   });
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Usuario', dataIndex: 'usuario', key: 'usuario' },
-    { title: 'Correo', dataIndex: 'correo', key: 'correo' },
+    { title: 'ID', dataIndex: 'id', key: 'id', sorter: true, ...getColumnSearchProps('id') },
+    { title: 'Usuario', dataIndex: 'usuario', key: 'usuario', sorter: true, ...getColumnSearchProps('usuario') },
+    { title: 'Correo', dataIndex: 'correo', key: 'correo', sorter: true, ...getColumnSearchProps('correo') },
     {
       title: 'Nombre Completo',
       key: 'nombreCompleto',
+      sorter: true,
       ...getColumnSearchProps('nombreCompleto'),
       render: (text, record) => `${record.nombre} ${record.apell_paterno} ${record.apell_materno}`,
     },

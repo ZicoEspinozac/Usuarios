@@ -4,7 +4,7 @@ const usuarioController = require('../controllers/usuarioController');
 const verificarRol = require('../middleware/verificarRol');  // Importar el middleware
 
 // Esta ruta estará protegida y solo accesible para el rol 'admin'
-router.get('/', verificarRol(['admin']), usuarioController.obtenerUsuarios);
+router.get('/', verificarRol(['admin', 'usuario']), usuarioController.obtenerUsuarios);
 
 // Ruta para crear un nuevo usuario, accesible solo para el rol 'admin'
 router.post('/crear', verificarRol(['admin']), usuarioController.crearUsuario);

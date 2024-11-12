@@ -14,19 +14,19 @@ const obtenerUsuarios = async (req, res) => {
             {
               nombre: {
                 contains: search,
-                mode: 'insensitive',
+                
               },
             },
             {
               apell_paterno: {
                 contains: search,
-                mode: 'insensitive',
+                
               },
             },
             {
               apell_materno: {
                 contains: search,
-                mode: 'insensitive',
+                
               },
             },
           ],
