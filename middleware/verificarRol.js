@@ -12,17 +12,24 @@ const verificarRol = (rolesPermitidos) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const usuario = await prisma.usuario.findUnique({
         where: { id: decoded.id },
-        include: { roles: true },
+        include: { roles: { include: { role: true } } }, // Asegúrate de incluir los roles
       });
 
-      if (!usuario) return res.sendStatus(403);
+      if (!usuario) {
+        console.log('Usuario no encontrado');
+        return res.sendStatus(403);
+      }
 
-      const tieneRolPermitido = usuario.roles.some(rol => rolesPermitidos.includes(rol.nombre));
-      if (!tieneRolPermitido) return res.sendStatus(403);
+      const tieneRolPermitido = usuario.roles.some(rol => rolesPermitidos.includes(rol.role.nombre));
+      if (!tieneRolPermitido) {
+        console.log('Rol no permitido');
+        return res.sendStatus(403);
+      }
 
       req.user = usuario;
       next();
     } catch (err) {
+      console.log('Error en la verificación del token o roles:', err);
       return res.sendStatus(403);
     }
   };

@@ -15,4 +15,7 @@ router.put('/editar/:id', verificarRol(['admin']), usuarioController.editarUsuar
 // Ruta para eliminar un usuario, accesible solo para el rol 'admin'
 router.delete('/eliminar/:id', verificarRol(['admin']), usuarioController.eliminarUsuario);
 
+// Ruta para obtener los roles disponibles
+router.get('/roles', verificarRol(['admin']), usuarioController.obtenerRoles);
+
 module.exports = router;
